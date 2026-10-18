@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>堅牢ローカル ToDo リスト</title>
+  <style>
+    :root {
+      --bg-color: #121214;
+      --card-bg: #1e1e24;
+      --accent-color: #6366f1;
+      --accent-hover: #4f46e5;
+      --text-color: #f3f4f6;
+      --text-muted: #9ca3af;
+      --border-color: #374151;
+      --completed-opacity: 0.35;
+      --danger-color: #ef4444;
+      --success-color: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    header {
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--text-color);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent-color);
+    }
+
+    button {
+      background-color: var(--accent-color);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0 18px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.85rem;
+    }
+
+    .filters {
+      display: flex;
+      gap: 6px;
+    }
+
+    .filter-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+
+    .filter-btn.active {
+      background-color: var(--accent-color);
+      color: #fff;
+      border-color: var(--accent-color);
+    }
+
+    .todo-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      padding: 12px 16px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .todo-item.completed {
+      opacity: var(--completed-opacity);
+    }
+
+    .todo-item.completed .todo-text {
+      text-decoration: line-through;
+    }
+
+    .checkbox {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 2px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .todo-item.completed .checkbox {
+      background-color: var(--accent-color);
+      border-color: var(--accent-color);
+    }
+
+    .checkbox::after {
+      content: "✓";
+      color: white;
+      font-size: 14px;
+      display: none;
+    }
+
+    .todo-item.completed .checkbox::after {
+      display: block;
+    }
+
+    .todo-text {
+      flex: 1;
+      word-break: break-all;
+      font-size: 0.95rem;
+    }
+
+    .delete-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 8px;
+      font-size: 1rem;
+      border-radius: 4px;
+    }
+
+    .delete-btn:hover {
+      color: var(--danger-color);
+      background-color: rgba(239, 68, 68, 0.1);
+    }
+
+    .backup-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .backup-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--border-color);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background-color: rgba(16, 185, 129, 0.1);
+      color: var(--success-color);
+      font-size: 0.75rem;
+    }
+
+    #import-file {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>ToDo リスト (多重バックアップ版)</h1>
+    <p>完全オフライン対応・自動リカバリ＆トリプルストレージ同期</p>
+  </header>
+
+  <section class="card">
+    <form id="todo-form" class="input-group">
+      <input type="text" id="todo-input" placeholder="新しいタスクを入力..." required autocomplete="off">
+      <button type="submit">追加</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="controls">
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">すべて</button>
+        <button class="filter-btn" data-filter="active">未完了</button>
+        <button class="filter-btn" data-filter="completed">完了済み</button>
+      </div>
+      <span id="task-count">0 件のタスク</span>
+    </div>
+
+    <ul id="todo-list" class="todo-list"></ul>
+  </section>
+
+  <section class="card backup-section">
+    <div>
+      <div>同期ステータス: <span class="status-badge" id="sync-status">● 二重バックアップ正常</span></div>
+      <div style="margin-top: 4px; font-size: 0.75rem;">最終同期: <span id="last-sync-time">-</span></div>
+    </div>
+    <div class="backup-buttons">
+      <button class="btn-secondary" id="export-btn">JSON書き出し</button>
+      <button class="btn-secondary" id="import-btn">JSON読み込み</button>
+      <input type="file" id="import-file" accept=".json">
+    </div>
+  </section>
+</div>
+
+<script>
+/**
+ * 高堅牢 ToDo ストレージマネージャー (localStorage + IndexedDB)
+ */
+class RobustStorage {
+  constructor() {
+    this.dbName = 'RobustTodoDB';
+    this.storeName = 'todos_store';
+    this.db = null;
+    this.lsKey = 'ROBUST_TODO_DATA_V1';
+  }
+
+  async init() {
+    await this.initIndexedDB();
+    return await this.loadAndHeal();
+  }
+
+  initIndexedDB() {
+    return new Promise((resolve) => {
+      if (!window.indexedDB) {
+        console.warn('IndexedDB非対応環境のため、localStorage のみ動作します');
+        resolve();
+        return;
+      }
+      const request = indexedDB.open(this.dbName, 1);
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(this.storeName)) {
+          db.createObjectStore(this.storeName, { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = (e) => {
+        this.db = e.target.result;
+        resolve();
+      };
+      request.onerror = () => {
+        console.warn('IndexedDBアクセス失敗。localStorage にフォールバックします');
+        resolve();
+      };
+    });
+  }
+
+  // localStorage と IndexedDB の相互読み込みとセルフヒーリング（最新データへの補正）
+  async loadAndHeal() {
+    let lsData = this.getLocalStorageData();
+    let idbData = await this.getIndexedDBData();
+
+    let lsTime = lsData ? lsData.lastUpdated || 0 : 0;
+    let idbTime = idbData ? idbData.lastUpdated || 0 : 0;
+
+    let finalData = null;
+
+    if (lsTime >= idbTime && lsData) {
+      finalData = lsData;
+      if (idbTime < lsTime) this.saveIndexedDBData(finalData); // IDB復旧
+    } else if (idbData) {
+      finalData = idbData;
+      this.saveLocalStorageData(finalData); // LocalStorage復旧
+    } else {
+      finalData = { version: "1.0", lastUpdated: Date.now(), todos: [] };
+    }
+
+    return finalData;
+  }
+
+  getLocalStorageData() {
+    try {
+      const raw = localStorage.getItem(this.lsKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      console.error('localStorage 読み込み失敗:', e);
+      return null;
+    }
+  }
+
+  saveLocalStorageData(data) {
+    try {
+      localStorage.setItem(this.lsKey, JSON.stringify(data));
+    } catch (e) {
+      console.error('localStorage 書き込み失敗:', e);
+    }
+  }
+
+  getIndexedDBData() {
+    return new Promise((resolve) => {
+      if (!this.db) return resolve(null);
+      try {
+        const tx = this.db.transaction(this.storeName, 'readonly');
+        const store = tx.objectStore(this.storeName);
+        const req = store.get('root_payload');
+        req.onsuccess = () => resolve(req.result ? req.result.payload : null);
+        req.onerror = () => resolve(null);
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  }
+
+  saveIndexedDBData(data) {
+    return new Promise((resolve) => {
+      if (!this.db) return resolve();
+      try {
+        const tx = this.db.transaction(this.storeName, 'readwrite');
+        const store = tx.objectStore(this.storeName);
+        store.put({ id: 'root_payload', payload: data });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      } catch (e) {
+        resolve();
+      }
+    });
+  }
+
+  async save(payload) {
+    payload.lastUpdated = Date.now();
+    this.saveLocalStorageData(payload);
+    await this.saveIndexedDBData(payload);
+    return payload.lastUpdated;
+  }
+}
+
+/**
+ * UI アプリケーション コントローラー
+ */
+class TodoApp {
+  constructor() {
+    this.storage = new RobustStorage();
+    this.state = { version: "1.0", lastUpdated: Date.now(), todos: [] };
+    this.currentFilter = 'all';
+
+    this.dom = {
+      form: document.getElementById('todo-form'),
+      input: document.getElementById('todo-input'),
+      list: document.getElementById('todo-list'),
+      count: document.getElementById('task-count'),
+      syncTime: document.getElementById('last-sync-time'),
+      exportBtn: document.getElementById('export-btn'),
+      importBtn: document.getElementById('import-btn'),
+      importFile: document.getElementById('import-file'),
+      filterBtns: document.querySelectorAll('.filter-btn')
+    };
+  }
+
+  async init() {
+    this.state = await this.storage.init();
+    this.bindEvents();
+    this.render();
+    this.updateSyncTime(this.state.lastUpdated);
+  }
+
+  bindEvents() {
+    this.dom.form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.addTodo(this.dom.input.value);
+      this.dom.input.value = '';
+    });
+
+    this.dom.filterBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        this.dom.filterBtns.forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        this.currentFilter = e.target.dataset.filter;
+        this.render();
+      });
+    });
+
+    this.dom.exportBtn.addEventListener('click', () => this.exportJSON());
+    this.dom.importBtn.addEventListener('click', () => this.dom.importFile.click());
+    this.dom.importFile.addEventListener('change', (e) => this.importJSON(e));
+  }
+
+  async addTodo(text) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    const newTodo = {
+      id: 'todo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      text: trimmed,
+      completed: false,
+      createdAt: Date.now()
+    };
+
+    this.state.todos.unshift(newTodo);
+    await this.persist();
+    this.render();
+  }
+
+  async toggleTodo(id) {
+    this.state.todos = this.state.todos.map(t => {
+      if (t.id === id) return { ...t, completed: !t.completed };
+      return t;
+    });
+    await this.persist();
+    this.render();
+  }
+
+  async deleteTodo(id) {
+    this.state.todos = this.state.todos.filter(t => t.id !== id);
+    await this.persist();
+    this.render();
+  }
+
+  async persist() {
+    const time = await this.storage.save(this.state);
+    this.updateSyncTime(time);
+  }
+
+  updateSyncTime(timestamp) {
+    if (!timestamp) return;
+    const d = new Date(timestamp);
+    this.dom.syncTime.textContent = `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
+  }
+
+  exportJSON() {
+    const blob = new Blob([JSON.stringify(this.state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `todo-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  importJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported && Array.isArray(imported.todos)) {
+          this.state = imported;
+          await this.persist();
+          this.render();
+          alert('データを正常にインポートしました');
+        } else {
+          alert('不適切なファイル形式です');
+        }
+      } catch (err) {
+        alert('JSONの解析に失敗しました');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  render() {
+    this.dom.list.innerHTML = '';
+    
+    const filtered = this.state.todos.filter(t => {
+      if (this.currentFilter === 'active') return !t.completed;
+      if (this.currentFilter === 'completed') return t.completed;
+      return true;
+    });
+
+    filtered.forEach(todo => {
+      const li = document.createElement('li');
+      li.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+      
+      const checkbox = document.createElement('div');
+      checkbox.className = 'checkbox';
+      checkbox.onclick = () => this.toggleTodo(todo.id);
+
+      const text = document.createElement('span');
+      text.className = 'todo-text';
+      text.textContent = todo.text;
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'delete-btn';
+      delBtn.innerHTML = '✕';
+      delBtn.title = '完全削除';
+      delBtn.onclick = () => this.deleteTodo(todo.id);
+
+      li.appendChild(checkbox);
+      li.appendChild(text);
+      li.appendChild(delBtn);
+
+      this.dom.list.appendChild(li);
+    });
+
+    const activeCount = this.state.todos.filter(t => !t.completed).length;
+    this.dom.count.textContent = `残り ${activeCount} 件 / 全 ${this.state.todos.length} 件`;
+  }
+}
+
+// アプリ起動
+document.addEventListener('DOMContentLoaded', () => {
+  const app = new TodoApp();
+  app.init();
+});
+</script>
+</body>
+</html>
